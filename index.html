@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Visual System Design Diagram Builder - Create system architecture diagrams with drag and drop"
+    />
+    <title>SysDesign Studio — System Design Diagram Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Toolbar -->
+      <header id="toolbar" class="toolbar"></header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Sidebar Palette -->
+        <aside id="palette" class="palette"></aside>
+
+        <!-- Canvas Area -->
+        <div class="canvas-wrapper" id="canvas-wrapper">
+          <canvas id="diagram-canvas"></canvas>
+          <div class="canvas-info" id="canvas-info">
+            <span id="zoom-level">100%</span>
+          </div>
+        </div>
+
+        <!-- Properties Panel -->
+        <aside id="properties-panel" class="properties-panel"></aside>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
