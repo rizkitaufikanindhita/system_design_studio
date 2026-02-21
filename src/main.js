@@ -22,8 +22,8 @@ function init() {
   const toolbar = new Toolbar(toolbarEl, diagram);
 
   // Hook up selection change to properties panel
-  diagram.onSelectionChange = (node, conn, selectedNodes) => {
-    properties.update(node, conn, selectedNodes);
+  diagram.onSelectionChange = (node, conn, selectedNodes, selectedGroup) => {
+    properties.update(node, conn, selectedNodes, selectedGroup);
   };
 
   // Load autosaved diagram if exists
@@ -33,7 +33,7 @@ function init() {
   }
 
   // Autosave on change
-  diagram.onDiagramChange = () => {
+  diagram.addChangeListener(() => {
     // Debounced autosave
     clearTimeout(diagram._autosaveTimer);
     diagram._autosaveTimer = setTimeout(() => {
@@ -44,7 +44,7 @@ function init() {
         // ignore
       }
     }, 1000);
-  };
+  });
 
   // Expose for debugging
   window.__diagram = diagram;

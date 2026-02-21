@@ -16,6 +16,7 @@ export class Node {
     this.color = color || '#8b5cf6';
     this.description = description || '';
     this.selected = false;
+    this.simState = null; // Set by SimulationEngine when active
     this.ports = {
       top:    { x: 0, y: 0 },
       bottom: { x: 0, y: 0 },
@@ -155,6 +156,62 @@ export class Node {
     }
     ctx.restore();
 
+    // Simulation overlay
+    if (this.simState) {
+      this._drawSimState(ctx, x, y, w, h, color);
+    }
+
+    // Replica badge
+    const replicas = this.specs?.replicas || this.specs?.nodes || this.specs?.instances || this.specs?.brokers || 0;
+    if (replicas > 1) {
+      const badgeText = `×${replicas}`;
+      ctx.font = 'bold 10px Inter, sans-serif';
+      const tw = ctx.measureText(badgeText).width;
+      const bw = tw + 8;
+      const bh = 16;
+      const bx = x + w - bw - 4;
+      const by = y + 8;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 4);
+      ctx.fillStyle = color + 'cc';
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(badgeText, bx + bw / 2, by + bh / 2);
+    }
+
+    // Fail state overlay
+    if (this._failState) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      if (this._failState === 'failed') {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // Red X
+        ctx.font = '700 40px Inter, sans-serif';
+        ctx.fillStyle = '#ef4444';
+        ctx.textAlign = 'center';
+        ctx.fillText('✕', x + w / 2, y + h / 2 + 15);
+      } else if (this._failState === 'impacted') {
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+        ctx.fill();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Warning Icon
+        ctx.font = '700 30px Inter, sans-serif';
+        ctx.fillStyle = '#f59e0b';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️', x + w / 2, y + h / 2 + 10);
+      }
+      ctx.restore();
+    }
+
     // Ports (drawn when hovered or selected)
     if (this.selected) {
       this._drawPorts(ctx, color);
@@ -172,6 +229,78 @@ export class Node {
       ctx.lineWidth = 2;
       ctx.stroke();
     }
+  }
+
+  _drawSimState(ctx, x, y, w, h, nodeColor) {
+    const state = this.simState;
+    const statusColors = { healthy: '#22c55e', warning: '#f59e0b', error: '#ef4444' };
+    const statusColor = statusColors[state.status] || '#22c55e';
+
+    // Status badge (top-right corner)
+    const badgeR = 5;
+    const badgeX = x + w - 10;
+    const badgeY = y + 10;
+
+    ctx.save();
+    // Pulse glow
+    if (state.pulseAlpha > 0) {
+      ctx.shadowColor = statusColor;
+      ctx.shadowBlur = 12 * state.pulseAlpha;
+    }
+    ctx.beginPath();
+    ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+    ctx.fillStyle = statusColor;
+    ctx.fill();
+
+    // Pulse ring
+    if (state.pulseAlpha > 0.1) {
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeR + 4 * state.pulseAlpha, 0, Math.PI * 2);
+      ctx.strokeStyle = statusColor;
+      ctx.globalAlpha = state.pulseAlpha * 0.6;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+
+    // Mini-metrics bar below node
+    const metrics = state.metrics;
+    if (metrics.length === 0) return;
+
+    // Show top 2 metrics
+    const display = metrics.slice(0, 2);
+    const metricText = display.map(m => {
+      const val = m.precision > 0 ? m.current.toFixed(m.precision) : Math.round(m.current);
+      return `${m.label}: ${val}${m.unit ? m.unit : ''}`;
+    }).join('  •  ');
+
+    const metricY = y + h + 6;
+    const fontSize = 9;
+
+    ctx.save();
+    ctx.font = `500 ${fontSize}px Inter, system-ui, sans-serif`;
+    const textWidth = ctx.measureText(metricText).width;
+    const padding = 6;
+    const boxW = textWidth + padding * 2;
+    const boxH = fontSize + padding * 2 - 2;
+    const boxX = x + (w - boxW) / 2;
+
+    // Background pill
+    ctx.beginPath();
+    ctx.roundRect(boxX, metricY, boxW, boxH, 4);
+    ctx.fillStyle = 'rgba(15, 17, 23, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = statusColor + '44';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Metric text
+    ctx.fillStyle = '#9ca3b8';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(metricText, boxX + boxW / 2, metricY + boxH / 2);
+    ctx.restore();
   }
 
   toJSON() {

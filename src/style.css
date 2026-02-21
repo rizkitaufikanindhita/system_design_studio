@@ -824,3 +824,493 @@ body {
   cursor: pointer;
 }
 .chat-settings-save:hover { opacity: 0.9; }
+
+/* ========== Simulate Button ========== */
+.sim-btn {
+  background: rgba(236, 72, 153, 0.1) !important;
+  color: #ec4899 !important;
+}
+.sim-btn:hover { background: #ec4899 !important; color: white !important; }
+.sim-btn.active {
+  background: #ec4899 !important;
+  color: white !important;
+  animation: simPulse 2s ease-in-out infinite;
+}
+@keyframes simPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(236, 72, 153, 0); }
+}
+
+/* ========== Simulation Panel ========== */
+.sim-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  z-index: 8000;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+}
+.sim-panel.open {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sim-panel-inner {
+  background: rgba(24, 24, 27, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 8px 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+
+[data-theme="light"] .sim-panel-inner {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.sim-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.sim-ctrl-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 8px;
+  background: var(--bg-3);
+  color: var(--text-1);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sim-ctrl-btn:hover { background: var(--bg-hover); color: var(--text-0); }
+.sim-ctrl-btn.sim-play { background: #22c55e; color: white; }
+.sim-ctrl-btn.sim-play:hover { background: #16a34a; }
+.sim-ctrl-btn.sim-stop { color: var(--red); }
+.sim-ctrl-btn.sim-stop:hover { background: rgba(239, 68, 68, 0.15); }
+
+.sim-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .sim-divider { background: rgba(0, 0, 0, 0.08); }
+
+.sim-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-2);
+  margin-right: 4px;
+}
+
+.sim-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sim-speed-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sim-speed-btn:hover { border-color: var(--accent); color: var(--accent); }
+.sim-speed-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.sim-scenario-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-scenario-select {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-2);
+  color: var(--text-0);
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  outline: none;
+}
+.sim-scenario-select:focus { border-color: var(--accent); }
+
+.sim-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.sim-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 50px;
+}
+
+.sim-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-0);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-stat-label {
+  font-size: 9px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sim-stat-health {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.sim-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.sim-dot.healthy { background: #22c55e; }
+.sim-dot.warning { background: #f59e0b; }
+.sim-dot.error { background: #ef4444; }
+
+/* Simulation Config Section */
+.sim-config-section {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+[data-theme="light"] .sim-config-section {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.sim-config-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+.sim-config-toggle:hover { color: var(--text-0); }
+
+.sim-config-chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.sim-config-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding: 0 4px;
+}
+.sim-config-section.open .sim-config-body {
+  max-height: 120px;
+  padding: 4px 4px 8px;
+}
+
+.sim-config-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+.sim-config-row:last-child { margin-bottom: 0; }
+
+.sim-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sim-config-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.sim-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-slider {
+  width: 140px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--val, 50%), var(--bg-3) var(--val, 50%), var(--bg-3) 100%);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.1s;
+  margin: 0;
+}
+.sim-slider:hover {
+  filter: brightness(1.1);
+}
+.sim-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #a5b4fc, var(--accent));
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  box-shadow: 0 0 0 0 rgba(99, 102, 241, 0), 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.sim-slider:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 2px 8px rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+.sim-slider:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.3), 0 2px 10px rgba(0, 0, 0, 0.5);
+  transform: scale(1.15);
+}
+.sim-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+}
+.sim-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #a5b4fc, var(--accent));
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.sim-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-3);
+}
+.sim-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.sim-slider-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-0);
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.sim-data-group {
+  display: flex;
+  gap: 2px;
+}
+
+.sim-data-btn {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sim-data-btn:hover { border-color: var(--accent); color: var(--accent); }
+.sim-data-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.sim-config-derived {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 4px 0;
+}
+
+.sim-derived-dot {
+  color: var(--text-2);
+  font-size: 8px;
+}
+
+/* ========== Spec Section in Properties Panel ========== */
+.spec-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.spec-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-0);
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.spec-tier-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.spec-tier-btn {
+  flex: 1;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.spec-tier-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.06);
+}
+.spec-tier-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ========== Analysis Panels (Cost, SLA, Failure, Capacity) ========== */
+.cost-panel, .sla-panel, .failure-panel, .capacity-panel {
+  position: fixed;
+  top: 70px;
+  right: 320px;
+  width: 340px;
+  max-height: calc(100vh - 100px);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xl);
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.cost-panel-header {
+  padding: 12px 16px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.cost-panel-close {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.cost-panel-total {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cost-panel-table {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.cost-panel-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cost-panel-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cost-panel-table td {
+  padding: 10px 4px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--bg-2);
+}
+
+.failure-panel select, .capacity-panel input, .capacity-panel select {
+  font-size: 12px;
+  margin-bottom: 8px;
+}

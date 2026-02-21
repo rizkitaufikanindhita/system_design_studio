@@ -34,7 +34,8 @@ export class Palette {
                   <div class="palette-item" draggable="true"
                        data-type="${item.type}"
                        data-label="${item.label}"
-                       data-color="${item.color}">
+                       data-color="${item.color}"
+                       data-is-group="${item.isGroup ? 'true' : 'false'}">
                     <div class="palette-item-icon" style="background:${item.color}22">
                       <span style="color:${item.color}">${item.icon}</span>
                     </div>
@@ -139,6 +140,7 @@ export class Palette {
           type: item.dataset.type,
           label: item.dataset.label,
           color: item.dataset.color,
+          isGroup: item.dataset.isGroup === 'true',
         };
         e.dataTransfer.setData('text/plain', JSON.stringify(this._dragData));
         e.dataTransfer.effectAllowed = 'copy';
@@ -181,13 +183,21 @@ export class Palette {
         const screenY = e.clientY - rect.top;
         const world = this.diagram.screenToWorld(screenX, screenY);
 
-        this.diagram.addNode(
-          this._dragData.type,
-          this._dragData.label,
-          world.x - 80, // center the node
-          world.y - 35,
-          this._dragData.color
-        );
+        if (this._dragData.isGroup) {
+          this.diagram.addGroup(
+            this._dragData.type,
+            world.x - 200,
+            world.y - 150
+          );
+        } else {
+          this.diagram.addNode(
+            this._dragData.type,
+            this._dragData.label,
+            world.x - 80, // center the node
+            world.y - 35,
+            this._dragData.color
+          );
+        }
         this._dragData = null;
       });
     }

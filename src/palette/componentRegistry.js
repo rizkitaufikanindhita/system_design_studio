@@ -97,6 +97,18 @@ export const componentRegistry = [
       { type: 'metrics', label: 'Metrics', desc: 'Performance tracking', icon: icons.monitoring, color: '#64748b' },
     ]
   },
+  {
+    category: 'Infrastructure',
+    color: '#3b82f6',
+    items: [
+      { type: 'region', label: 'Region', desc: 'Cloud region', icon: '🌏', color: '#3b82f6', isGroup: true },
+      { type: 'vpc', label: 'VPC', desc: 'Virtual network', icon: '🔒', color: '#6366f1', isGroup: true },
+      { type: 'az', label: 'Availability Zone', desc: 'AZ boundary', icon: '🏢', color: '#8b5cf6', isGroup: true },
+      { type: 'microservice', label: 'Microservice', desc: 'Service boundary', icon: '📦', color: '#22c55e', isGroup: true },
+      { type: 'security', label: 'Security Zone', desc: 'DMZ / Private', icon: '🛡️', color: '#ef4444', isGroup: true },
+      { type: 'custom', label: 'Custom Group', desc: 'Custom boundary', icon: '📁', color: '#64748b', isGroup: true },
+    ]
+  },
 ];
 
 export function findComponent(type) {

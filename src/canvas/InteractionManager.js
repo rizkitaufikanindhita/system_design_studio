@@ -5,6 +5,8 @@ export class InteractionManager {
     this.isPanning = false;
     this.isDraggingNode = false;
     this.isDraggingMulti = false;
+    this.isDraggingGroup = false;
+    this.isResizingGroup = false;
     this.isDrawingConnection = false;
     this.isSelecting = false;
     this.dragOffset = { x: 0, y: 0 };
@@ -97,8 +99,33 @@ export class InteractionManager {
       return;
     }
 
+    // Check if clicking on a group
+    const group = this.diagram.getGroupAt(world.x, world.y);
+    if (group) {
+      // Check resize handle first
+      if (group.selected) {
+        const handle = group.getResizeHandleAt(world.x, world.y);
+        if (handle) {
+          this.isResizingGroup = true;
+          this._resizeHandle = handle;
+          this.lastMouse = { x: world.x, y: world.y };
+          this.canvas.style.cursor = 'nwse-resize';
+          return;
+        }
+      }
+      this.diagram.selectGroup(group);
+      this.isDraggingGroup = true;
+      this.dragOffset = { x: world.x - group.x, y: world.y - group.y };
+      this.canvas.style.cursor = 'grabbing';
+      return;
+    }
+
     // Click on empty space: start rubber band selection
     this.diagram.clearSelection();
+    if (this.diagram.selectedGroup) {
+      this.diagram.selectedGroup.selected = false;
+      this.diagram.selectedGroup = null;
+    }
     this.isSelecting = true;
     this.diagram.selectionRect = { x1: world.x, y1: world.y, x2: world.x, y2: world.y };
     this.canvas.style.cursor = 'crosshair';
@@ -138,6 +165,29 @@ export class InteractionManager {
       return;
     }
 
+    if (this.isDraggingGroup && this.diagram.selectedGroup) {
+      const gridSize = this.diagram.gridSize;
+      const group = this.diagram.selectedGroup;
+      const newX = Math.round((world.x - this.dragOffset.x) / gridSize) * gridSize;
+      const newY = Math.round((world.y - this.dragOffset.y) / gridSize) * gridSize;
+      const dx = newX - group.x;
+      const dy = newY - group.y;
+      group.moveWithChildren(dx, dy, this.diagram.nodes);
+      this.diagram.render();
+      return;
+    }
+
+    if (this.isResizingGroup && this.diagram.selectedGroup) {
+      const group = this.diagram.selectedGroup;
+      const dx = world.x - this.lastMouse.x;
+      const dy = world.y - this.lastMouse.y;
+      group.width = Math.max(200, group.width + dx);
+      group.height = Math.max(150, group.height + dy);
+      this.lastMouse = { x: world.x, y: world.y };
+      this.diagram.render();
+      return;
+    }
+
     if (this.isDrawingConnection && this.diagram.drawingConnection) {
       this.diagram.drawingConnection.toX = world.x;
       this.diagram.drawingConnection.toY = world.y;
@@ -172,6 +222,17 @@ export class InteractionManager {
 
     if (this.isDraggingNode) {
       this.isDraggingNode = false;
+      // Check if node was dropped into a group
+      const draggedNode = this.diagram.selectedNode;
+      if (draggedNode) {
+        for (const group of this.diagram.groups) {
+          if (group.containsNode(draggedNode)) {
+            group.addNode(draggedNode.id);
+          } else {
+            group.removeNode(draggedNode.id);
+          }
+        }
+      }
       this.diagram._saveHistory();
       this.canvas.style.cursor = 'grab';
     }
@@ -181,6 +242,19 @@ export class InteractionManager {
       this.multiDragOffsets = [];
       this.diagram._saveHistory();
       this.canvas.style.cursor = 'grab';
+    }
+
+    if (this.isDraggingGroup) {
+      this.isDraggingGroup = false;
+      this.diagram._saveHistory();
+      this.canvas.style.cursor = 'grab';
+    }
+
+    if (this.isResizingGroup) {
+      this.isResizingGroup = false;
+      this._resizeHandle = null;
+      this.diagram._saveHistory();
+      this.canvas.style.cursor = 'default';
     }
 
     if (this.isDrawingConnection && this.diagram.drawingConnection) {
@@ -255,6 +329,9 @@ export class InteractionManager {
         this.diagram.removeSelectedNodes();
       } else if (this.diagram.selectedConnection) {
         this.diagram.removeConnection(this.diagram.selectedConnection.id);
+      } else if (this.diagram.selectedGroup) {
+        this.diagram.removeGroup(this.diagram.selectedGroup.id);
+        this.diagram.selectedGroup = null;
       }
     }
 

@@ -3,6 +3,12 @@ import { saveDiagram, loadDiagram, exportAsJSON, importJSON, exportAsPNG } from 
 import { templates } from '../templates/templates.js';
 import { DesignGuide } from '../guide/DesignGuide.js';
 import { ChatPanel } from '../chat/ChatPanel.js';
+import { SimulationEngine } from '../simulation/SimulationEngine.js';
+import { SimulationPanel } from '../simulation/SimulationPanel.js';
+import { CostPanel } from '../cost/CostPanel.js';
+import { SlaPanel } from '../sla/SlaPanel.js';
+import { FailurePanel } from '../failure/FailurePanel.js';
+import { CapacityPanel } from '../capacity/CapacityPanel.js';
 
 export class Toolbar {
   constructor(containerEl, diagram) {
@@ -10,6 +16,24 @@ export class Toolbar {
     this.diagram = diagram;
     this.guide = new DesignGuide();
     this.chat = new ChatPanel(diagram);
+    this.simEngine = new SimulationEngine(diagram);
+    this.simPanel = new SimulationPanel(diagram);
+    this.simPanel.attach(this.simEngine);
+    this.simPanel.onStop = () => this._updateSimButton(false);
+    this.isSimulating = false;
+    this.costPanel = new CostPanel(diagram);
+    this.slaPanel = new SlaPanel(diagram);
+    this.failurePanel = new FailurePanel(diagram);
+    this.capacityPanel = new CapacityPanel(diagram);
+
+    // Refresh panels on diagram change
+    this.diagram.addChangeListener(() => {
+      if (this.costPanel.visible) this.costPanel.update();
+      if (this.slaPanel.visible) this.slaPanel.update();
+      if (this.failurePanel.visible) this.failurePanel.update();
+      if (this.capacityPanel.visible) this.capacityPanel.update();
+    });
+
     this.render();
   }
 
@@ -64,12 +88,24 @@ export class Toolbar {
       <div class="toolbar-spacer"></div>
 
       <div class="toolbar-group">
+        <button class="toolbar-btn sim-btn" id="btn-simulate" title="Run Simulation">
+          <span style="font-size:16px">▶</span><span>Simulate</span>
+        </button>
         <button class="toolbar-btn guide-btn" id="btn-guide" title="Design Guide">
           <span style="font-size:16px">📖</span><span>Guide</span>
         </button>
         <button class="toolbar-btn chat-btn" id="btn-chat" title="AI Chat Assistant">
           <span style="font-size:16px">💬</span><span>Chat</span>
         </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button class="toolbar-btn" id="btn-cost" title="Cost Estimation"><span style="font-size:14px">💰</span><span>Cost</span></button>
+        <button class="toolbar-btn" id="btn-sla" title="SLA Calculator"><span style="font-size:14px">📊</span><span>SLA</span></button>
+        <button class="toolbar-btn" id="btn-failure" title="Failure Analysis"><span style="font-size:14px">💥</span><span>Failure</span></button>
+        <button class="toolbar-btn" id="btn-capacity" title="Capacity Planning"><span style="font-size:14px">📐</span><span>Capacity</span></button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -143,6 +179,10 @@ export class Toolbar {
       }
     });
 
+    $('btn-simulate')?.addEventListener('click', () => {
+      this._toggleSimulation();
+    });
+
     $('btn-guide')?.addEventListener('click', () => {
       this.guide.toggle();
     });
@@ -150,6 +190,11 @@ export class Toolbar {
     $('btn-chat')?.addEventListener('click', () => {
       this.chat.toggle();
     });
+
+    $('btn-cost')?.addEventListener('click', () => this.costPanel.toggle());
+    $('btn-sla')?.addEventListener('click', () => this.slaPanel.toggle());
+    $('btn-failure')?.addEventListener('click', () => this.failurePanel.toggle());
+    $('btn-capacity')?.addEventListener('click', () => this.capacityPanel.toggle());
 
     $('btn-theme')?.addEventListener('click', () => {
       const html = document.documentElement;
@@ -159,6 +204,35 @@ export class Toolbar {
       $('btn-theme').innerHTML = next === 'dark' ? icons.sun : icons.moon;
       this.diagram.render();
     });
+  }
+
+  _toggleSimulation() {
+    this.isSimulating = !this.isSimulating;
+    if (this.isSimulating) {
+      this.simEngine.start();
+      this.simPanel.show();
+      this._updateSimButton(true);
+      this._toast('Simulation started!');
+    } else {
+      this.simEngine.stop();
+      this.simPanel.hide();
+      this._updateSimButton(false);
+      this._toast('Simulation stopped');
+    }
+  }
+
+  _updateSimButton(active) {
+    this.isSimulating = active;
+    const btn = document.getElementById('btn-simulate');
+    if (btn) {
+      if (active) {
+        btn.classList.add('active');
+        btn.innerHTML = '<span style="font-size:16px">⏹</span><span>Stop Sim</span>';
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<span style="font-size:16px">▶</span><span>Simulate</span>';
+      }
+    }
   }
 
   _toast(message) {

@@ -1,5 +1,6 @@
 import { Node, resetIdCounter } from './Node.js';
 import { Connection, resetConnIdCounter } from './Connection.js';
+import { Group, resetGroupIdCounter } from './Group.js';
 import { InteractionManager } from './InteractionManager.js';
 
 export class DiagramCanvas {
@@ -9,6 +10,7 @@ export class DiagramCanvas {
     this.ctx = canvasEl.getContext('2d');
     this.nodes = [];
     this.connections = [];
+    this.groups = [];
 
     // View transform
     this.offsetX = 0;
@@ -22,13 +24,14 @@ export class DiagramCanvas {
     // State — multi-select support
     this.selectedNodes = [];       // array of selected nodes
     this.selectedConnection = null;
+    this.selectedGroup = null;
     this.hoveredNode = null;
     this.drawingConnection = null; // { fromNode, fromPort, toX, toY }
     this.selectionRect = null;     // { x1, y1, x2, y2 } in world coords
 
     // Callbacks
     this.onSelectionChange = null;
-    this.onDiagramChange = null;
+    this._changeListeners = [];
 
     // Interaction
     this.interaction = new InteractionManager(this);
@@ -43,6 +46,16 @@ export class DiagramCanvas {
     this._saveHistory();
 
     requestAnimationFrame(() => this.render());
+  }
+
+  addChangeListener(fn) {
+    this._changeListeners.push(fn);
+  }
+
+  _notifyDiagramChange() {
+    for (const fn of this._changeListeners) {
+      if (typeof fn === 'function') fn();
+    }
   }
 
   _resize() {
@@ -164,8 +177,10 @@ export class DiagramCanvas {
   clearSelection() {
     for (const n of this.selectedNodes) n.selected = false;
     if (this.selectedConnection) this.selectedConnection.selected = false;
+    if (this.selectedGroup) this.selectedGroup.selected = false;
     this.selectedNodes = [];
     this.selectedConnection = null;
+    this.selectedGroup = null;
     this._notifySelectionChange();
     this.render();
   }
@@ -220,6 +235,45 @@ export class DiagramCanvas {
     this.render();
   }
 
+  // ====== Group operations ======
+  addGroup(type, worldX, worldY) {
+    const group = new Group({ type, x: worldX, y: worldY });
+    this.groups.push(group);
+    this.selectGroup(group);
+    this._saveHistory();
+    this.render();
+    return group;
+  }
+
+  removeGroup(groupId) {
+    this.groups = this.groups.filter(g => g.id !== groupId);
+    this._saveHistory();
+    this._notifySelectionChange();
+    this.render();
+  }
+
+  getGroupAt(worldX, worldY) {
+    // Reverse order so topmost group is found first
+    for (let i = this.groups.length - 1; i >= 0; i--) {
+      if (this.groups[i].containsPoint(worldX, worldY)) {
+        return this.groups[i];
+      }
+    }
+    return null;
+  }
+
+  selectGroup(group) {
+    // Deselect everything else
+    for (const n of this.nodes) n.selected = false;
+    this.selectedNodes = [];
+    this.selectedConnection = null;
+    for (const g of this.groups) g.selected = false;
+    // Select this group
+    if (group) group.selected = true;
+    this.selectedGroup = group;
+    this._notifySelectionChange();
+  }
+
   // ====== Zoom ======
   zoomTo(newScale, centerX, centerY) {
     const prevScale = this.scale;
@@ -246,7 +300,7 @@ export class DiagramCanvas {
     this.history.push(state);
     if (this.history.length > this.maxHistory) this.history.shift();
     this.historyIndex = this.history.length - 1;
-    if (this.onDiagramChange) this.onDiagramChange();
+    this._notifyDiagramChange();
   }
 
   undo() {
@@ -267,7 +321,7 @@ export class DiagramCanvas {
     this.deserialize(state, false);
     this._notifySelectionChange();
     this.render();
-    if (this.onDiagramChange) this.onDiagramChange();
+    this._notifyDiagramChange();
   }
 
   // ====== Serialization ======
@@ -275,6 +329,7 @@ export class DiagramCanvas {
     return {
       nodes: this.nodes.map(n => n.toJSON()),
       connections: this.connections.map(c => c.toJSON()),
+      groups: this.groups.map(g => g.toJSON()),
     };
   }
 
@@ -282,6 +337,7 @@ export class DiagramCanvas {
     if (!data) return;
     this.nodes = (data.nodes || []).map(d => Node.fromJSON(d));
     this.connections = (data.connections || []).map(d => Connection.fromJSON(d));
+    this.groups = (data.groups || []).map(d => Group.fromJSON(d));
     this.selectedNodes = [];
     this.selectedConnection = null;
 
@@ -299,6 +355,14 @@ export class DiagramCanvas {
     resetIdCounter(maxNodeId);
     resetConnIdCounter(maxConnId);
 
+    // Reset group ID counter
+    let maxGroupId = 0;
+    for (const g of this.groups) {
+      const num = parseInt(g.id.replace('group_', '')) || 0;
+      if (num > maxGroupId) maxGroupId = num;
+    }
+    resetGroupIdCounter(maxGroupId);
+
     if (saveHistory) this._saveHistory();
     this._notifySelectionChange();
     this.render();
@@ -307,6 +371,7 @@ export class DiagramCanvas {
   clear() {
     this.nodes = [];
     this.connections = [];
+    this.groups = [];
     this.selectedNodes = [];
     this.selectedConnection = null;
     this._saveHistory();
@@ -317,11 +382,12 @@ export class DiagramCanvas {
   // ====== Notifications ======
   _notifySelectionChange() {
     if (this.onSelectionChange) {
-      // Pass first selected node (or null), connection, and full array
+      // Pass first selected node (or null), connection, full array, and group
       this.onSelectionChange(
         this.selectedNodes.length === 1 ? this.selectedNodes[0] : null,
         this.selectedConnection,
-        this.selectedNodes
+        this.selectedNodes,
+        this.selectedGroup || null
       );
     }
   }
@@ -374,6 +440,11 @@ export class DiagramCanvas {
 
     // Grid
     if (this.showGrid) this._drawGrid(ctx, w, h);
+
+    // Groups (rendered first, behind everything)
+    for (const group of this.groups) {
+      group.draw(ctx);
+    }
 
     // Connections
     for (const conn of this.connections) {
