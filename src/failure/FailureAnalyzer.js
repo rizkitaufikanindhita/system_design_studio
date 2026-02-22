@@ -3,21 +3,11 @@
 export function analyzeFailure(targetNodeId, nodes, connections) {
   if (!targetNodeId) return { impacted: [], chains: [] };
 
-  // Build adjacency (directed graph — who depends on whom)
-  const dependents = {}; // nodeId -> [nodeIds that depend on it]
+  // Build adjacency: "if X fails, who is impacted?"
+  // Connection A → B means A sends to B, so B depends on A.
+  // If A fails, B loses its upstream → B is impacted.
+  const dependents = {}; // nodeId -> [nodeIds impacted by its failure]
   for (const conn of connections) {
-    if (!dependents[conn.fromNodeId]) dependents[conn.fromNodeId] = [];
-    // toNode depends on fromNode, but in failure terms: if fromNode dies, toNode is impacted
-    // Actually: connection from A -> B means A sends to B, so B depends on A
-    // If A fails, B loses its upstream
-    if (!dependents[conn.toNodeId]) dependents[conn.toNodeId] = [];
-    // fromNodeId is the source, toNodeId is the consumer
-    // If toNodeId fails: fromNodeId might back up, but we focus on downstream
-    // If fromNodeId fails: toNodeId loses the dependency
-
-    // We want: "if X fails, who is impacted?"
-    // X → Y means X sends data to Y. If X fails, Y may not get data.
-    // So: failure of fromNodeId impacts toNodeId
     if (!dependents[conn.fromNodeId]) dependents[conn.fromNodeId] = [];
     dependents[conn.fromNodeId].push(conn.toNodeId);
   }

@@ -38,11 +38,29 @@ export class FailurePanel {
     this.diagram.render();
   }
 
+  _getSeverity(impactPercent) {
+    if (impactPercent >= 60) return 'critical';
+    if (impactPercent >= 30) return 'high';
+    if (impactPercent >= 10) return 'medium';
+    return 'low';
+  }
+
+  _renderChain(chain) {
+    const nodes = this.diagram.nodes;
+    return `<div class="failure-chain">${chain.map((id, i) => {
+      const n = nodes.find(x => x.id === id);
+      const label = n?.label || id;
+      const cls = i === 0 ? 'source' : 'impacted';
+      const arrow = i < chain.length - 1 ? '<span class="failure-chain-arrow">→</span>' : '';
+      return `<span class="failure-chain-node ${cls}">${label}</span>${arrow}`;
+    }).join('')}</div>`;
+  }
+
   update() {
     if (!this.visible) return;
 
     const nodeOptions = this.diagram.nodes.map(n =>
-      `<option value="${n.id}">${n.label} (${n.type})</option>`
+      `<option value="${n.id}"${this._failureOverlay?.targetId === n.id ? ' selected' : ''}>${n.label} (${n.type})</option>`
     ).join('');
 
     let resultHtml = '';
@@ -50,33 +68,37 @@ export class FailurePanel {
       const fo = this._failureOverlay;
       const result = analyzeFailure(fo.targetId, this.diagram.nodes, this.diagram.connections);
       const targetNode = this.diagram.nodes.find(n => n.id === fo.targetId);
+      const severity = this._getSeverity(result.impactPercent);
 
       resultHtml = `
-        <div style="margin-top:12px;padding:10px;background:var(--bg-2);border-radius:8px;border:1px solid #ef444440">
-          <div style="font-weight:600;color:#ef4444;margin-bottom:6px">
-            ⚠️ ${targetNode?.label || 'Unknown'} fails
+        <div style="margin-top:12px;padding:12px;background:var(--bg-2);border-radius:8px;border:1px solid #ef444440">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:600;color:#ef4444">
+              ⚠️ ${targetNode?.label || 'Unknown'} fails
+            </div>
+            <span class="failure-severity ${severity}">${severity}</span>
           </div>
-          <div style="display:flex;gap:16px;margin-bottom:8px">
+          <div style="display:flex;gap:16px;margin-bottom:10px">
             <div style="text-align:center">
-              <div style="font-size:20px;font-weight:700;color:#ef4444">${result.impactCount}</div>
+              <div style="font-size:22px;font-weight:700;color:#ef4444">${result.impactCount}</div>
               <div style="font-size:10px;color:var(--text-2)">Impacted</div>
             </div>
             <div style="text-align:center">
-              <div style="font-size:20px;font-weight:700;color:#f59e0b">${result.impactPercent}%</div>
+              <div style="font-size:22px;font-weight:700;color:#f59e0b">${result.impactPercent}%</div>
               <div style="font-size:10px;color:var(--text-2)">of System</div>
             </div>
-          </div>
-          ${result.impacted.length > 0 ? `
-            <div style="font-size:11px;color:var(--text-2);margin-bottom:4px">Cascading impact:</div>
-            <div style="max-height:120px;overflow-y:auto">
-              ${result.impacted.map(id => {
-                const n = this.diagram.nodes.find(x => x.id === id);
-                return `<div style="font-size:11px;padding:2px 0;color:var(--text-1)">
-                  <span style="color:#ef4444">✕</span> ${n?.label || id}
-                </div>`;
-              }).join('')}
+            <div style="text-align:center">
+              <div style="font-size:22px;font-weight:700;color:var(--text-1)">${result.totalNodes}</div>
+              <div style="font-size:10px;color:var(--text-2)">Total</div>
             </div>
-          ` : '<div style="font-size:11px;color:#22c55e">✓ No downstream impact</div>'}
+          </div>
+          ${result.chains.length > 0 ? `
+            <div style="font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:6px">Cascade Paths:</div>
+            <div style="max-height:140px;overflow-y:auto">
+              ${result.chains.slice(0, 10).map(chain => this._renderChain(chain)).join('')}
+              ${result.chains.length > 10 ? `<div style="font-size:10px;color:var(--text-2);padding:4px 0">... and ${result.chains.length - 10} more paths</div>` : ''}
+            </div>
+          ` : '<div style="font-size:11px;color:#22c55e">✓ No downstream impact — this component is a leaf node</div>'}
         </div>
       `;
     }
@@ -93,7 +115,7 @@ export class FailurePanel {
           ${nodeOptions}
         </select>
         <button class="props-delete-btn" id="failure-analyze" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440;margin-top:4px">
-          Analyze Failure
+          ⚡ Analyze Failure
         </button>
         ${resultHtml}
       </div>

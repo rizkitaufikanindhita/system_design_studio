@@ -191,10 +191,22 @@ export class Toolbar {
       this.chat.toggle();
     });
 
-    $('btn-cost')?.addEventListener('click', () => this.costPanel.toggle());
-    $('btn-sla')?.addEventListener('click', () => this.slaPanel.toggle());
-    $('btn-failure')?.addEventListener('click', () => this.failurePanel.toggle());
-    $('btn-capacity')?.addEventListener('click', () => this.capacityPanel.toggle());
+    $('btn-cost')?.addEventListener('click', () => {
+      this.costPanel.toggle();
+      $('btn-cost')?.classList.toggle('active', this.costPanel.visible);
+    });
+    $('btn-sla')?.addEventListener('click', () => {
+      this.slaPanel.toggle();
+      $('btn-sla')?.classList.toggle('active', this.slaPanel.visible);
+    });
+    $('btn-failure')?.addEventListener('click', () => {
+      this.failurePanel.toggle();
+      $('btn-failure')?.classList.toggle('active', this.failurePanel.visible);
+    });
+    $('btn-capacity')?.addEventListener('click', () => {
+      this.capacityPanel.toggle();
+      $('btn-capacity')?.classList.toggle('active', this.capacityPanel.visible);
+    });
 
     $('btn-theme')?.addEventListener('click', () => {
       const html = document.documentElement;

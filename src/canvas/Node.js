@@ -5,7 +5,7 @@ export function generateId() { return `node_${++_idCounter}`; }
 export function resetIdCounter(val = 0) { _idCounter = val; }
 
 export class Node {
-  constructor({ id, type, label, x, y, color, description }) {
+  constructor({ id, type, label, x, y, color, description, specs }) {
     this.id = id || generateId();
     this.type = type;
     this.label = label || type;
@@ -15,6 +15,7 @@ export class Node {
     this.height = 70;
     this.color = color || '#8b5cf6';
     this.description = description || '';
+    this.specs = specs || null; // vCPUs, ramGB, replicas, storageGB, etc.
     this.selected = false;
     this.simState = null; // Set by SimulationEngine when active
     this.ports = {
@@ -304,11 +305,13 @@ export class Node {
   }
 
   toJSON() {
-    return {
+    const data = {
       id: this.id, type: this.type, label: this.label,
       x: this.x, y: this.y, color: this.color,
       description: this.description,
     };
+    if (this.specs) data.specs = { ...this.specs };
+    return data;
   }
 
   static fromJSON(data) {
